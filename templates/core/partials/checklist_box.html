@@ -1,0 +1,49 @@
+<div id="checklist-container" class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+    <div class="flex items-center justify-between mb-4">
+        <div>
+            <h3 class="font-bold text-slate-900">Checklist Opérationnelle par Zone</h3>
+            <p class="text-xs text-slate-500">Cochez les tâches au fur et à mesure de leur exécution sur le site</p>
+        </div>
+        <span class="px-3 py-1 rounded-full text-xs font-extrabold bg-emerald-100 text-emerald-800">
+            {{ intervention.checklist_progress }}% complété
+        </span>
+    </div>
+
+    <div class="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden mb-5">
+        <div class="h-full bg-emerald-500 transition-all duration-300" style="width: {{ intervention.checklist_progress }}%"></div>
+    </div>
+
+    <div class="space-y-2.5">
+        {% for task in intervention.tasks.all %}
+        <form method="post" hx-post="{% url 'intervention_detail' intervention.pk %}" hx-target="#checklist-container" hx-swap="outerHTML" class="flex items-center justify-between p-3.5 rounded-xl border transition {% if task.is_completed %}bg-emerald-50/50 border-emerald-200{% else %}bg-slate-50 border-slate-200 hover:border-slate-300{% endif %}">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="toggle_task">
+            <input type="hidden" name="task_id" value="{{ task.id }}">
+            <div class="flex items-center gap-3">
+                <button type="submit" class="w-6 h-6 rounded-lg flex items-center justify-center border transition {% if task.is_completed %}bg-emerald-600 border-emerald-600 text-white{% else %}bg-white border-slate-300 text-transparent hover:border-emerald-500{% endif %}">
+                    <i class="fa-solid fa-check text-xs"></i>
+                </button>
+                <div>
+                    <span class="text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-white border border-slate-200 text-slate-600">{{ task.zone_name }}</span>
+                    <p class="text-sm font-medium mt-1 {% if task.is_completed %}line-through text-slate-400{% else %}text-slate-800{% endif %}">{{ task.description }}</p>
+                </div>
+            </div>
+            {% if task.is_completed and task.completed_by %}
+            <span class="text-[11px] text-emerald-700 font-medium hidden sm:inline">
+                <i class="fa-solid fa-user-check mr-1"></i>{{ task.completed_by.first_name }}
+            </span>
+            {% endif %}
+        </form>
+        {% endfor %}
+    </div>
+
+    {% if request.user.role != 'CLIENT' %}
+    <form method="post" class="mt-4 pt-4 border-t border-slate-100 flex flex-col sm:flex-row gap-2">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="add_task">
+        <input type="text" name="zone_name" placeholder="Zone (ex: Sanitaires R+1)" required class="sm:w-44 px-3 py-2 rounded-xl border border-slate-300 text-xs">
+        <input type="text" name="description" placeholder="Ajouter une tâche de contrôle..." required class="flex-1 px-3 py-2 rounded-xl border border-slate-300 text-xs">
+        <button type="submit" class="px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-800">+ Ajouter</button>
+    </form>
+    {% endif %}
+</div>

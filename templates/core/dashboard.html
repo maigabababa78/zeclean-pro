@@ -1,0 +1,208 @@
+{% extends 'base.html' %}
+{% load cfa_tags %}
+
+{% block content %}
+<!-- Bandeau de bienvenue contextuel selon le rôle -->
+<div class="mb-6 p-6 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-900 text-white shadow-lg flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div>
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-xs font-semibold mb-2">
+            <i class="fa-solid fa-sparkles"></i>
+            <span>Vue {{ request.user.get_role_display }}</span>
+        </div>
+        <h2 class="text-xl sm:text-2xl font-bold">Bonjour, {{ request.user.get_full_name|default:request.user.username }}</h2>
+        <p class="text-xs sm:text-sm text-slate-300 mt-1">
+            {% if request.user.role == 'ADMIN' %}
+                Synthèse d'exploitation de votre société de nettoyage : chantiers du jour, chiffre d'affaires récurrent et qualité terrain.
+            {% elif request.user.role == 'SUPERVISOR' %}
+                Suivi des équipes d'intervention, pointages du jour et contrôles qualité sur les sites clients.
+            {% elif request.user.role == 'AGENT' %}
+                Consultez votre planning d'intervention du jour, validez vos checklists de tâches et signalez votre présence.
+            {% else %}
+                Bienvenue sur votre Portail Client : suivez les interventions sur vos sites, les rapports qualité et vos factures.
+            {% endif %}
+        </p>
+    </div>
+    <div class="flex flex-wrap gap-2.5">
+        <a href="{% url 'planning' %}" class="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs sm:text-sm transition shadow">
+            <i class="fa-solid fa-calendar-day mr-1.5"></i> Voir le planning
+        </a>
+        {% if request.user.role != 'AGENT' %}
+        <a href="{% url 'billing' %}" class="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-xs sm:text-sm border border-white/15 transition">
+            <i class="fa-solid fa-file-invoice-dollar mr-1.5"></i> Facturation FCFA
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- 4 Cartes KPI principales -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+        <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Revenu Mensuel Contrats</span>
+            <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                <i class="fa-solid fa-sack-dollar text-lg"></i>
+            </div>
+        </div>
+        <p class="text-2xl font-extrabold text-slate-900 mt-3">{{ monthly_recurring_ht|fcfa }}</p>
+        <p class="text-xs text-slate-500 mt-1">
+            <span class="text-emerald-600 font-semibold">{{ active_contracts_count }} contrats actifs</span> • {{ active_clients_count }} clients
+        </p>
+    </div>
+
+    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+        <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Interventions & Chantiers</span>
+            <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                <i class="fa-solid fa-broom text-lg"></i>
+            </div>
+        </div>
+        <p class="text-2xl font-extrabold text-slate-900 mt-3">{{ today_interventions.count }} aujourd'hui</p>
+        <p class="text-xs text-slate-500 mt-1">
+            <span class="text-amber-600 font-semibold">{{ in_progress_count }} en cours</span> • {{ planned_count }} planifiées • {{ completed_count }} terminées
+        </p>
+    </div>
+
+    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+        <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Effectif & Pointage</span>
+            <div class="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
+                <i class="fa-solid fa-user-check text-lg"></i>
+            </div>
+        </div>
+        <p class="text-2xl font-extrabold text-slate-900 mt-3">{{ agents_present_today }} / {{ agents_total }} présents</p>
+        <p class="text-xs text-slate-500 mt-1">
+            Agents & chefs d'équipe mobilisés sur site
+        </p>
+    </div>
+
+    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+        <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Indice Qualité Client</span>
+            <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                <i class="fa-solid fa-star text-lg"></i>
+            </div>
+        </div>
+        <p class="text-2xl font-extrabold text-slate-900 mt-3">{{ avg_quality }}%</p>
+        <p class="text-xs text-slate-500 mt-1">
+            {% if low_stock_items %}
+                <span class="text-rose-600 font-semibold"><i class="fa-solid fa-triangle-exclamation"></i> {{ low_stock_items|length }} alerte(s) stock</span>
+            {% else %}
+                <span class="text-emerald-600 font-semibold">Stocks & matériel opérationnels</span>
+            {% endif %}
+        </p>
+    </div>
+</div>
+
+<!-- Grille principale : Interventions à venir + Alertes Stock & Contrôles Qualité -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <!-- Liste des interventions -->
+    <div class="lg:col-span-8 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+            <div>
+                <h3 class="font-bold text-slate-900">Planning des Interventions & Chantiers</h3>
+                <p class="text-xs text-slate-500">Suivi en temps réel des prestations, équipes et checklists</p>
+            </div>
+            <a href="{% url 'planning' %}" class="text-xs font-semibold text-emerald-600 hover:text-emerald-700">
+                Tout voir <i class="fa-solid fa-arrow-right ml-1"></i>
+            </a>
+        </div>
+
+        <div class="divide-y divide-slate-100">
+            {% for inter in upcoming_interventions %}
+            <div class="p-5 hover:bg-slate-50/80 transition flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div class="space-y-1">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span class="text-xs font-mono font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-700">{{ inter.code }}</span>
+                        {% if inter.status == 'EN_COURS' %}
+                            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800"><i class="fa-solid fa-spinner fa-spin mr-1"></i>En cours</span>
+                        {% elif inter.status == 'TERMINE' %}
+                            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800"><i class="fa-solid fa-check mr-1"></i>Terminé</span>
+                        {% else %}
+                            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 text-blue-800"><i class="fa-regular fa-clock mr-1"></i>Planifié</span>
+                        {% endif %}
+                        <span class="text-xs text-slate-500 font-medium">{{ inter.get_intervention_type_display }}</span>
+                    </div>
+                    <a href="{% url 'intervention_detail' inter.pk %}" class="text-sm font-bold text-slate-900 hover:text-emerald-600 block">
+                        {{ inter.title }}
+                    </a>
+                    <p class="text-xs text-slate-500">
+                        <i class="fa-solid fa-location-dot text-slate-400 mr-1"></i> {{ inter.site.name }} ({{ inter.site.client.name }})
+                        {% if inter.team %} • <span class="text-slate-700 font-medium">{{ inter.team.name }}</span>{% endif %}
+                    </p>
+                </div>
+
+                <div class="flex sm:flex-col items-center sm:items-end justify-between gap-2 shrink-0">
+                    <div class="text-right">
+                        <p class="text-xs font-bold text-slate-800">{{ inter.scheduled_date|date:"d/m/Y" }}</p>
+                        <p class="text-[11px] text-slate-500">{{ inter.start_time|time:"H:i" }} - {{ inter.end_time|time:"H:i" }}</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="w-20 bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                            <div class="bg-emerald-500 h-full" style="width: {{ inter.checklist_progress }}%"></div>
+                        </div>
+                        <span class="text-[11px] font-semibold text-slate-600">{{ inter.checklist_progress }}%</span>
+                        <a href="{% url 'intervention_detail' inter.pk %}" class="px-2.5 py-1 rounded-lg bg-slate-900 text-white text-xs font-semibold hover:bg-emerald-600 transition">
+                            Ouvrir
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="p-8 text-center text-sm text-slate-500">Aucune intervention planifiée pour le moment.</div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Colonne droite : Alertes Stocks + Derniers contrôles qualité -->
+    <div class="lg:col-span-4 space-y-6">
+        <!-- Alertes réapprovisionnement stocks -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+                    <i class="fa-solid fa-boxes-stacked text-rose-500"></i>
+                    <span>Alertes Stocks & Produits</span>
+                </h3>
+                <a href="{% url 'inventory' %}" class="text-xs font-semibold text-emerald-600 hover:underline">Gérer</a>
+            </div>
+            <div class="space-y-3">
+                {% for item in low_stock_items %}
+                <div class="p-3 rounded-xl bg-rose-50/70 border border-rose-200 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-bold text-slate-900">{{ item.name }}</p>
+                        <p class="text-[11px] text-rose-700">Reste : <strong>{{ item.quantity }} {{ item.unit }}</strong> (Seuil : {{ item.min_threshold }})</p>
+                    </div>
+                    <span class="px-2 py-1 rounded text-[10px] font-bold bg-rose-600 text-white">Commander</span>
+                </div>
+                {% empty %}
+                <p class="text-xs text-slate-500">Tous les stocks de produits sont au-dessus du seuil minimal.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Derniers Contrôles Qualité -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+                    <i class="fa-solid fa-clipboard-check text-emerald-600"></i>
+                    <span>Contrôles Qualité Récents</span>
+                </h3>
+                <a href="{% url 'quality' %}" class="text-xs font-semibold text-emerald-600 hover:underline">Détails</a>
+            </div>
+            <div class="space-y-3">
+                {% for insp in recent_inspections %}
+                <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-slate-900">{{ insp.intervention.site.name }}</span>
+                        <span class="px-2 py-0.5 rounded-full text-xs font-extrabold bg-emerald-100 text-emerald-800">{{ insp.overall_score }}%</span>
+                    </div>
+                    <p class="text-[11px] text-slate-600 mt-1">{{ insp.observations|truncatechars:80 }}</p>
+                    <p class="text-[10px] text-slate-400 mt-1.5">
+                        Inspecté par {{ insp.inspector.get_full_name }} • {% if insp.client_signed %}Signé par {{ insp.client_signatory_name }}{% endif %}
+                    </p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

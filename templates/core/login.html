@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full bg-slate-900">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexion — ZeClean Pro ({{ COMPANY_NAME }})</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body class="min-h-full flex items-center justify-center p-4 bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950 font-sans">
+
+<div class="max-w-4xl w-full grid grid-cols-1 lg:grid-cols-12 bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-200">
+    <!-- Colonne gauche : Présentation métier -->
+    <div class="lg:col-span-5 bg-gradient-to-br from-emerald-600 to-teal-800 p-8 text-white flex flex-col justify-between">
+        <div>
+            <div class="inline-flex items-center gap-3 bg-white/15 backdrop-blur px-4 py-2 rounded-2xl mb-6">
+                <i class="fa-solid fa-sparkles text-emerald-200"></i>
+                <span class="font-bold tracking-wide text-sm">ZeClean Pro • Zone CFA</span>
+            </div>
+            <h1 class="text-2xl sm:text-3xl font-extrabold leading-tight">Gestion Intégrale de Société de Nettoyage</h1>
+            <p class="mt-3 text-emerald-100 text-sm leading-relaxed">
+                Pilotez vos chantiers, équipes d'entretien, contrats clients, stocks de produits et facturation en Francs CFA depuis une seule interface.
+            </p>
+
+            <ul class="mt-6 space-y-3 text-xs sm:text-sm text-emerald-50">
+                <li class="flex items-center gap-2.5"><i class="fa-solid fa-circle-check text-emerald-300"></i> Planning des interventions & équipes</li>
+                <li class="flex items-center gap-2.5"><i class="fa-solid fa-circle-check text-emerald-300"></i> Pointage agents, congés & paie (FCFA)</li>
+                <li class="flex items-center gap-2.5"><i class="fa-solid fa-circle-check text-emerald-300"></i> Contrôle qualité, checklists & signatures</li>
+                <li class="flex items-center gap-2.5"><i class="fa-solid fa-circle-check text-emerald-300"></i> Devis, contrats récurrents & factures TVA 18%</li>
+                <li class="flex items-center gap-2.5"><i class="fa-solid fa-circle-check text-emerald-300"></i> Gestion des stocks (détergents, machines, EPI)</li>
+            </ul>
+        </div>
+
+        <div class="mt-8 pt-6 border-t border-white/20 text-xs text-emerald-100">
+            <p class="font-semibold">{{ COMPANY_NAME }}</p>
+            <p>{{ COMPANY_ADDRESS }} • {{ COMPANY_PHONE }}</p>
+        </div>
+    </div>
+
+    <!-- Colonne droite : Connexion + Accès rapide démo -->
+    <div class="lg:col-span-7 p-8 sm:p-10">
+        <h2 class="text-2xl font-bold text-slate-900">Connexion à votre espace</h2>
+        <p class="text-sm text-slate-500 mt-1">Accédez à votre portail selon votre profil utilisateur.</p>
+
+        {% if messages %}
+        <div class="mt-4 space-y-2">
+            {% for message in messages %}
+            <div class="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Boutons de connexion rapide 1-clic pour tester tous les rôles -->
+        <div class="mt-6 p-4 rounded-2xl bg-emerald-50/80 border border-emerald-200">
+            <p class="text-xs font-bold uppercase tracking-wider text-emerald-900 mb-3">
+                <i class="fa-solid fa-bolt text-emerald-600 mr-1"></i> Accès Démo Instantané (1 clic sans mot de passe)
+            </p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <a href="{% url 'quick_login' 'admin' %}" class="flex items-center gap-3 p-3 rounded-xl bg-white hover:bg-emerald-600 hover:text-white text-slate-800 border border-emerald-200 shadow-sm transition group">
+                    <div class="w-9 h-9 rounded-lg bg-emerald-100 group-hover:bg-white/20 flex items-center justify-center text-emerald-700 group-hover:text-white">
+                        <i class="fa-solid fa-user-tie"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold">Administrateur / Gérant</p>
+                        <p class="text-[11px] opacity-75">Amadou Diallo (Accès complet)</p>
+                    </div>
+                </a>
+
+                <a href="{% url 'quick_login' 'superviseur' %}" class="flex items-center gap-3 p-3 rounded-xl bg-white hover:bg-emerald-600 hover:text-white text-slate-800 border border-emerald-200 shadow-sm transition group">
+                    <div class="w-9 h-9 rounded-lg bg-blue-100 group-hover:bg-white/20 flex items-center justify-center text-blue-700 group-hover:text-white">
+                        <i class="fa-solid fa-clipboard-check"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold">Chef d'Équipe / Superviseur</p>
+                        <p class="text-[11px] opacity-75">Moussa Ndiaye (Terrain & Qualité)</p>
+                    </div>
+                </a>
+
+                <a href="{% url 'quick_login' 'agent' %}" class="flex items-center gap-3 p-3 rounded-xl bg-white hover:bg-emerald-600 hover:text-white text-slate-800 border border-emerald-200 shadow-sm transition group">
+                    <div class="w-9 h-9 rounded-lg bg-amber-100 group-hover:bg-white/20 flex items-center justify-center text-amber-700 group-hover:text-white">
+                        <i class="fa-solid fa-broom"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold">Agent d'entretien</p>
+                        <p class="text-[11px] opacity-75">Awa Faye (Planning & Checklists)</p>
+                    </div>
+                </a>
+
+                <a href="{% url 'quick_login' 'client' %}" class="flex items-center gap-3 p-3 rounded-xl bg-white hover:bg-emerald-600 hover:text-white text-slate-800 border border-emerald-200 shadow-sm transition group">
+                    <div class="w-9 h-9 rounded-lg bg-purple-100 group-hover:bg-white/20 flex items-center justify-center text-purple-700 group-hover:text-white">
+                        <i class="fa-solid fa-building-user"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold">Portail Client</p>
+                        <p class="text-[11px] opacity-75">Banque Atlantique (Suivi & Factures)</p>
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <!-- Formulaire classique -->
+        <form method="post" class="mt-6 space-y-4">
+            {% csrf_token %}
+            <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Identifiant utilisateur</label>
+                <input type="text" name="username" value="admin" required class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Mot de passe</label>
+                <input type="password" name="password" value="admin123" required class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none">
+            </div>
+            <button type="submit" class="w-full py-3 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm shadow-lg transition">
+                Se connecter avec identifiants
+            </button>
+        </form>
+    </div>
+</div>
+
+</body>
+</html>

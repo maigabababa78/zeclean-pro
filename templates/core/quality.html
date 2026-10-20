@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div x-data="{ modalInspect: false }">
+
+    <!-- Moyennes Qualité -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+            <span class="text-xs font-semibold uppercase text-slate-400">Propreté Visuelle Moyenne</span>
+            <p class="text-2xl font-extrabold text-emerald-600 mt-1">{{ avg_cleanliness }} / 100</p>
+            <div class="w-full bg-slate-100 h-1.5 rounded-full mt-2"><div class="bg-emerald-500 h-full rounded-full" style="width: {{ avg_cleanliness }}%"></div></div>
+        </div>
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+            <span class="text-xs font-semibold uppercase text-slate-400">Respect Protocole & Sécurité HSE</span>
+            <p class="text-2xl font-extrabold text-blue-600 mt-1">{{ avg_protocol }} / 100</p>
+            <div class="w-full bg-slate-100 h-1.5 rounded-full mt-2"><div class="bg-blue-500 h-full rounded-full" style="width: {{ avg_protocol }}%"></div></div>
+        </div>
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+            <span class="text-xs font-semibold uppercase text-slate-400">Ponctualité & Tenue des Agents</span>
+            <p class="text-2xl font-extrabold text-purple-600 mt-1">{{ avg_punctuality }} / 100</p>
+            <div class="w-full bg-slate-100 h-1.5 rounded-full mt-2"><div class="bg-purple-500 h-full rounded-full" style="width: {{ avg_punctuality }}%"></div></div>
+        </div>
+    </div>
+
+    {% if request.user.role != 'CLIENT' and uninspected_interventions %}
+    <div class="flex justify-end mb-6">
+        <button @click="modalInspect = true" class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold shadow-sm">
+            <i class="fa-solid fa-clipboard-check mr-1.5"></i> Nouveau Rapport de Contrôle Qualité
+        </button>
+    </div>
+    {% endif %}
+
+    <!-- Liste des inspections -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        {% for insp in inspections %}
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+            <div class="flex items-start justify-between">
+                <div>
+                    <span class="font-mono text-xs font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-700">{{ insp.intervention.code }}</span>
+                    <h3 class="font-bold text-slate-900 mt-1.5">{{ insp.intervention.title }}</h3>
+                    <p class="text-xs text-slate-500">{{ insp.intervention.site.client.name }} — {{ insp.intervention.site.name }}</p>
+                </div>
+                <div class="text-right">
+                    <span class="px-3 py-1.5 rounded-xl text-base font-extrabold bg-emerald-100 text-emerald-800">{{ insp.overall_score }}%</span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2 my-4 text-center text-xs">
+                <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                    <span class="text-slate-400 block text-[10px]">Propreté</span>
+                    <strong class="text-slate-800">{{ insp.score_cleanliness }}%</strong>
+                </div>
+                <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                    <span class="text-slate-400 block text-[10px]">Protocole HSE</span>
+                    <strong class="text-slate-800">{{ insp.score_protocol }}%</strong>
+                </div>
+                <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                    <span class="text-slate-400 block text-[10px]">Ponctualité</span>
+                    <strong class="text-slate-800">{{ insp.score_punctuality }}%</strong>
+                </div>
+            </div>
+
+            <p class="text-xs text-slate-700 bg-slate-50 p-3 rounded-xl border border-slate-100">{{ insp.observations }}</p>
+
+            <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                <span>Inspecteur : <strong>{{ insp.inspector.get_full_name }}</strong></span>
+                {% if insp.client_signed %}
+                <span class="text-emerald-700 font-bold"><i class="fa-solid fa-signature mr-1"></i>Signé : {{ insp.client_signatory_name }}</span>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- MODAL : NOUVELLE INSPECTION -->
+    <div x-show="modalInspect" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+        <div @click.away="modalInspect = false" class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
+            <h3 class="text-lg font-bold text-slate-900 mb-4">Enregistrer un Contrôle Qualité</h3>
+            <form method="post" class="space-y-3 text-sm">
+                {% csrf_token %}
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Intervention contrôlée *</label>
+                    <select name="intervention_id" required class="w-full px-3.5 py-2 rounded-xl border border-slate-300">
+                        {% for inter in uninspected_interventions %}
+                        <option value="{{ inter.id }}">{{ inter.code }} — {{ inter.site.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="grid grid-cols-3 gap-2">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Propreté (/100)</label>
+                        <input type="number" name="score_cleanliness" value="95" class="w-full px-3 py-2 rounded-xl border border-slate-300">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Protocole (/100)</label>
+                        <input type="number" name="score_protocol" value="95" class="w-full px-3 py-2 rounded-xl border border-slate-300">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Ponctualité (/100)</label>
+                        <input type="number" name="score_punctuality" value="100" class="w-full px-3 py-2 rounded-xl border border-slate-300">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Observations & Actions correctives</label>
+                    <textarea name="observations" rows="3" required class="w-full px-3.5 py-2 rounded-xl border border-slate-300"></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Nom du signataire client</label>
+                    <input type="text" name="client_signatory_name" placeholder="M. / Mme..." class="w-full px-3.5 py-2 rounded-xl border border-slate-300">
+                </div>
+                <label class="flex items-center gap-2 text-xs font-semibold text-slate-700">
+                    <input type="checkbox" name="client_signed" checked> Validé et signé par le client
+                </label>
+                <div class="flex justify-end gap-2 pt-3">
+                    <button type="button" @click="modalInspect = false" class="px-4 py-2 rounded-xl border border-slate-300 text-xs font-semibold">Annuler</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold">Valider</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
